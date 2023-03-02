@@ -1,4 +1,5 @@
 #include "messages.h"
+#include "history.h"
 
 void initialize(int processes_count);
 void initMesh(int processes_count);

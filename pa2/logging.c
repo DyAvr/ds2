@@ -27,42 +27,49 @@ void closeLogger(){
     }
 }
 
-char* logEvent(local_id id, EventStatus status){
+void logEvent(EventStatus status, balance_t balance, local_id from, local_id to){
     char buf[255];
-
-    //printf("%1d: %u\n", id, status);
 
     switch(status) {
         case EVENT_STARTED:
-            sprintf(buf, log_started_fmt, id, getpid(), getppid());
-            break;
-        case EVENT_RECEIVED_ALL_STARTED:
-            sprintf(buf, log_received_all_started_fmt, id);
+            sprintf(buf, log_started_fmt, get_physical_time(), from, getpid(), getppid(), balance);
             break;
         case EVENT_DONE:
-            sprintf(buf, log_done_fmt, id);
+            sprintf(buf, log_done_fmt, get_physical_time(), from, balance);
+            break;
+        case EVENT_RECEIVED_ALL_STARTED:
+            sprintf(buf, log_received_all_started_fmt, get_physical_time(), from);
             break;
         case EVENT_RECEIVED_ALL_DONE:
-            sprintf(buf, log_received_all_done_fmt, id);
+            sprintf(buf, log_received_all_done_fmt, get_physical_time(), from);
+            break;
+        case EVENT_TRANSFER_IN:
+            sprintf(buf, log_transfer_in_fmt, get_physical_time(), from, balance, to);
+            break;
+        case EVENT_TRANSFER_OUT:
+            sprintf(buf, log_transfer_out_fmt, get_physical_time(), to, balance, from);
+            break;
+        case EVENT_LOOP_OPERATION:
+            sprintf(buf, log_loop_operation_fmt, from, to, balance);
             break;
     }
 
     printf("%s", buf);
     write(logger.fd_events_log, buf, strlen(buf));
-
-    char *result = (char*)malloc(strlen(buf)+1);
-    strcpy(result, buf);
-    return result;
 }
 
-void logPipe(local_id id, int p1, int p2, int ds_read, int ds_write){
+void logPipe(PipeStatus status, int p1, int p2, int ds_read, int ds_write){
     char buf[100];
 
-    if (p1 == 0 && p2 == 0){
-        sprintf(buf, log_pipe_closed_fmt, id, ds_read, ds_write);
-    } else {
-        sprintf(buf, log_pipe_open_fmt, id, p1, p2, ds_read, ds_write);
+    switch(status) {
+        case PIPE_STARTED:
+            sprintf(buf, log_pipe_open_fmt, p1, p2, ds_read, ds_write);
+            break;
+        case PIPE_CLOSED:
+            sprintf(buf, log_pipe_closed_fmt, p1, p2, ds_read, ds_write);
+            break;
     }
 
+    //printf("%s", buf);
     write(logger.fd_pipes_log, buf, strlen(buf));
 }

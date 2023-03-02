@@ -2,13 +2,10 @@
 
 Mesh *mesh;
 
-void initialize(int processes_count){
+void initialize(int processes_count, balance_t* balances){
     initLogger();
-    //printf("initLogger\n");
     initMesh(processes_count + 1);
-    //printf("initMesssg\n");
     createMeshProcesses();
-    //printf("the end :)\n");
 }
 
 void initMesh(int processes_count){
