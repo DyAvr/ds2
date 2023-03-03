@@ -44,10 +44,10 @@ void logEvent(EventStatus status, balance_t balance, local_id from, local_id to)
             sprintf(buf, log_received_all_done_fmt, get_physical_time(), from);
             break;
         case EVENT_TRANSFER_IN:
-            sprintf(buf, log_transfer_in_fmt, get_physical_time(), from, balance, to);
+            sprintf(buf, log_transfer_in_fmt, get_physical_time(), to, balance, from);
             break;
         case EVENT_TRANSFER_OUT:
-            sprintf(buf, log_transfer_out_fmt, get_physical_time(), to, balance, from);
+            sprintf(buf, log_transfer_out_fmt, get_physical_time(), from, balance, to);
             break;
         case EVENT_LOOP_OPERATION:
             sprintf(buf, log_loop_operation_fmt, from, to, balance);

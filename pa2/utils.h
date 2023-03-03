@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#include "ipc.h"
 #include "banking.h"
 
 #define MAX_PROCESSES_COUNT 10
@@ -34,6 +33,6 @@ typedef struct{
 
 typedef struct{
     balance_t **balances;
-    AllHistory *history;
+    BalanceHistory *b_history;
     timestamp_t last_b_state_time;
 } Bank;

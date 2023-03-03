@@ -1,7 +1,8 @@
-#include "messages.h"
-#include "history.h"
+#include <fcntl.h>
 
-void initialize(int processes_count);
+#include "bank.h"
+
+void initialize(int processes_count, balance_t **balances);
 void initMesh(int processes_count);
 
 void createMeshProcesses();
@@ -15,6 +16,6 @@ void closeUnusedPipes();
 
 void createSinglePipe(int* fdPipes);
 void setPipeFileDescriptors(int process1, int process2, int fdRead, int fdWrite, Mesh* mesh);
-void closeSinglePipe(Pipe* pipe);
 
-bool isProcessPairUnused(int process1, int process2, int current_id);
+void workChild();
+void handle_transfer(Message* received_msg);

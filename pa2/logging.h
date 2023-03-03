@@ -1,6 +1,5 @@
 #include "utils.h"
 #include "pa2345.h"
-#include "common.h"
 
 static const char * const log_pipe_open_fmt =
     "OPEN: Pipe: (from: %5d, to: %5d), Descriptors: (r: %5d, w: %5d)\n";
