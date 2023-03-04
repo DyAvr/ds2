@@ -6,7 +6,7 @@ void transfer(void * parent_data, local_id src, local_id dst,
     Mesh *mesh = (Mesh*) parent_data;
     
     Message msg = createMessage(MESSAGE_MAGIC, amount, src, dst, TRANSFER);
-    if (send(mesh, dst, &msg) != 0){
+    if (send(mesh, src, &msg) != 0){
         exit(1);
     }
 
@@ -21,21 +21,14 @@ int main(int argc, char * argv[])
     int p_count;
     
     if (argc > 4 && strcmp(argv[1], "-p") == 0) {
-        p_count = atoi(argv[2]);
+        p_count = (int)atoi(argv[2]);
+        //printf("p_count:%d\n", p_count);
     } 
     else {
         return 1;
     }
-
-    balance_t** balances = malloc(sizeof(balance_t*));
-    *balances = malloc(sizeof(balance_t) * p_count);
-    for (size_t i = 3; i < p_count; i++){
-        *(balances)[i-3] = (balance_t)atoi(argv[i]);
-    }
     
-    initialize(p_count, balances);
-
-    free(balances);
+    initialize(p_count, argv);
     
     return 0;
 }

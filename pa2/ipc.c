@@ -13,7 +13,7 @@ int send(void * self, local_id dst, const Message * msg){
         return 1;
     }
 
-    //printf("send %d to %d\n", mesh->current_id, dst);
+    //printf("SEND: %d->%d type:%d\n", mesh->current_id, dst, msg->s_header.s_type);
     return 0;
 }
 
@@ -38,7 +38,7 @@ int receive(void * self, local_id from, Message * msg){
     MessageHeader header;
     int bytes_read = read(pipe->fdRead, &header, sizeof(MessageHeader));
     if (bytes_read != sizeof(MessageHeader)) {
-        if (errno == EAGAIN){
+        if (bytes_read == -1 &&  errno == EAGAIN){
             return 2;
         }
         return 1;
@@ -61,7 +61,7 @@ int receive(void * self, local_id from, Message * msg){
     msg->s_header = header;
     memcpy(msg->s_payload, payload_buffer, header.s_payload_len);
 
-    //printf("receive %d from %d\n", mesh->current_id, from);
+    //printf("RECEIVE: %d<-%d type:%d\n", mesh->current_id, from, header.s_type);
     return 0;
 }
 
@@ -75,7 +75,7 @@ int receive_any(void * self, Message * msg){
                 return 0;
             }
 
-            if (status == 1) {
+            if (status == 2) {
                 continue;
             }
 

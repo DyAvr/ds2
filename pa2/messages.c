@@ -3,6 +3,7 @@
 Message createMessage(uint16_t magic, balance_t balance, local_id from, local_id to, MessageType type){
     Message message;
     MessageHeader messageHeader;
+    TransferOrder order;
     char *buf = (char*)malloc(sizeof(char) * 255); 
 
     switch (type){
@@ -19,7 +20,7 @@ Message createMessage(uint16_t magic, balance_t balance, local_id from, local_id
             strcpy(message.s_payload, buf);
             return message;
         case TRANSFER:
-            TransferOrder order = createTransferOrder(from, to, balance);
+            order = createTransferOrder(from, to, balance);
             messageHeader = createMessageHeader(magic, sizeof(TransferOrder), type);
             message.s_header = messageHeader;
             memcpy(message.s_payload, &order, sizeof(TransferOrder));
@@ -40,13 +41,22 @@ MessageHeader createMessageHeader(uint16_t magic, uint16_t p_len, int16_t type){
     return header;
 }
 
-void sendStartedSignal(Mesh* mesh) {
+Message sendStartedSignal(Mesh* mesh) {
     Message msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, 0, STARTED);
     logEvent(EVENT_STARTED, mesh->current_balance, mesh->current_id, 0);
-    if(send_multicast(mesh, &msg) != 0) {
-        printf("Can't send multicast");
-        exit(1);
+    // if(send_multicast(mesh, &msg) != 0) {
+    //     printf("Can't send multicast");
+    //     exit(1);
+    // }
+    for (int i = 1; i <= mesh->processes_count; i++){
+        if (i != mesh->current_id){
+            if (send(mesh, i, &msg) != 0){
+                exit(1);
+            }
+        }
     }
+    
+    return msg;
 }
 
 void waitForAllStarted(Mesh* mesh) {
@@ -54,11 +64,12 @@ void waitForAllStarted(Mesh* mesh) {
     for(int i = 1; i <= mesh->processes_count; i++) {
         if (i != mesh->current_id){
             int status = receive(mesh, i, &msg);
+            //printf("WAS: %d, i: %d, status: %d\n",mesh->current_id, i, status);
             if (status == 0 && msg.s_header.s_type != STARTED){
                 exit(2);
             } else if (status == 1){
                 exit(1);
-            } else {
+            } else if (status == 2){
                 i--;
             }
         }
@@ -83,7 +94,7 @@ void waitForAllDone(Mesh* mesh) {
                 i--;
             } else if (status == 1){
                 exit(1);
-            } else {
+            } else if (status == 2){
                 i--;
             }
         }

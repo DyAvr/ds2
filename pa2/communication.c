@@ -2,10 +2,10 @@
 
 Mesh *mesh;
 
-void initialize(int processes_count, balance_t** balances){
+void initialize(int processes_count, char * argv[]){
     initLogger();
     initMesh(processes_count);
-    initBank(balances, processes_count);
+    initBank(processes_count, argv);
     createMeshProcesses();
 }
 
@@ -16,15 +16,15 @@ void initMesh(int processes_count){
         exit(1);
     }
     mesh->processes_count = processes_count;
-    mesh->current_id = getpid();
-    mesh->parent_id = getpid();
+    mesh->current = getpid();
+    mesh->parent = getpid();
     createMeshPipes();
 }
 
 void createMeshProcesses(){
     pid_t pid;
-    for (int i = 0; i < mesh->processes_count; i++) {
-        mesh->current_balance = *(bank->balances)[i];
+    for (int i = 1; i <= mesh->processes_count; i++) {
+        mesh->current_balance = bank->balances[i-1];
         pid = fork();
         if (pid == -1) {
             printf("Cannot create fork process");
@@ -33,16 +33,9 @@ void createMeshProcesses(){
             mesh->current_id = i;
             mesh->current = pid;
             initHistory(mesh);
-            exit(0);
-        } else {
-            for (int j = 0; j <= mesh->processes_count; j++){
-                if (j!= (i+1)){
-                    close(mesh->pipes[i+1][j]->fdWrite);
-                }
-            }
-        }
+            break;
+        } 
     }
-
     closeUnusedPipes();
 
     if (mesh->parent == mesh->current){
@@ -52,6 +45,10 @@ void createMeshProcesses(){
     }
 
     closeLineCommunication();
+
+    if (mesh->parent == mesh->current){
+        waitAllChilds();
+    }
 }
 
 void createMeshPipes(){
@@ -80,8 +77,11 @@ void createMeshPipes(){
 
 void startChild(){
     //start
-    sendStartedSignal(mesh);
+    Message msg = sendStartedSignal(mesh);
     waitForAllStarted(mesh);
+    if (send(mesh, 0, &msg) != 0){
+        exit(1);
+    }
     //work
     workChild();
     //ending
@@ -105,12 +105,14 @@ void workChild(){
     int exit_flag = 1;
 
     while (exit_flag) {
-        int status;
         Message received_msg;
-
-        while ((status = receive_any(mesh, &received_msg)) == 1);
+        int status = receive_any(mesh, &received_msg);
+        while (status == 2){
+            status = receive_any(mesh, &received_msg);
+        }
 
         if (status == 0) {
+            //printf("type: %d\n", received_msg.s_header.s_type);
             switch (received_msg.s_header.s_type) {
                 case STOP:
                     storeState(received_msg.s_header.s_local_time, mesh->current_balance);
@@ -128,7 +130,7 @@ void handle_transfer(Message* received_msg) {
     TransferOrder transfer_order;
     memcpy(&transfer_order, received_msg->s_payload, sizeof(TransferOrder));
 
-    if (transfer_order.s_dst == mesh->current_id) {
+    if (transfer_order.s_dst == mesh->current_id) { 
         timestamp_t time = get_physical_time();
         transferIn(mesh, transfer_order.s_src, transfer_order.s_amount, time);
 
@@ -190,5 +192,14 @@ void setPipeFileDescriptors(int process1, int process2, int fdRead, int fdWrite,
     if (fcntl(fdWrite, F_SETFL, O_NONBLOCK)<0){
         perror("pipe fail nonblock");
         exit(2);
+    }
+}
+
+void waitAllChilds(){
+    int value;
+    for (int i = 0; i < mesh->processes_count; i++){
+        if (wait(&value) == -1){
+            exit(1);
+        }
     }
 }

@@ -2,7 +2,7 @@
 
 #include "bank.h"
 
-void initialize(int processes_count, balance_t **balances);
+void initialize(int processes_count, char * argv[]);
 void initMesh(int processes_count);
 
 void createMeshProcesses();
@@ -19,3 +19,4 @@ void setPipeFileDescriptors(int process1, int process2, int fdRead, int fdWrite,
 
 void workChild();
 void handle_transfer(Message* received_msg);
+void waitAllChilds();

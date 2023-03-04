@@ -5,7 +5,7 @@ MessageHeader createMessageHeader(uint16_t magic, uint16_t len, int16_t type);
 
 TransferOrder createTransferOrder(local_id from, local_id to, balance_t balance);
 
-void sendStartedSignal(Mesh* mesh);
+Message sendStartedSignal(Mesh* mesh);
 void waitForAllStarted(Mesh* mesh);
 void sendDoneSignal(Mesh* mesh);
 void waitForAllDone(Mesh* mesh);

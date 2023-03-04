@@ -32,7 +32,7 @@ typedef struct{
 } Logger;
 
 typedef struct{
-    balance_t **balances;
+    balance_t balances[MAX_PROCESSES_COUNT];
     BalanceHistory *b_history;
     timestamp_t last_b_state_time;
 } Bank;

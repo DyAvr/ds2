@@ -2,14 +2,14 @@
 
 Bank *bank;
 
-void initBank(balance_t** balances, int processes_count){
-    bank->balances = malloc(sizeof(balance_t*));
-    *(bank->balances) = malloc(sizeof(balance_t) * processes_count);
+void initBank(int processes_count, char * argv[]){
+    bank = (Bank*)malloc(sizeof(Bank));
+    bank->b_history = (BalanceHistory*)malloc(sizeof(BalanceHistory));
 
     for (int i = 0; i < processes_count; i++){
-        *(bank->balances)[i] = *(balances)[i];
+        bank->balances[i] = (balance_t)atoi(argv[i+3]);
+        //printf("%d\n", bank->balances[i]);
     }
-    
 }
 
 void initHistory(Mesh *mesh){
