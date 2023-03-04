@@ -1,7 +1,7 @@
 #include "logging.h"
 
 Message createMessage(uint16_t magic, balance_t balance, local_id from, local_id to, MessageType type);
-MessageHeader createMessageHeader(uint16_t magic, uint16_t len, int16_t type);
+MessageHeader createMessageHeader(uint16_t magic, uint16_t len, int16_t type, timestamp_t time);
 
 TransferOrder createTransferOrder(local_id from, local_id to, balance_t balance);
 

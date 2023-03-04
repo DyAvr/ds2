@@ -8,7 +8,6 @@ void initBank(int processes_count, char * argv[]){
 
     for (int i = 0; i < processes_count; i++){
         bank->balances[i] = (balance_t)atoi(argv[i+3]);
-        //printf("%d\n", bank->balances[i]);
     }
 }
 
@@ -27,12 +26,12 @@ BalanceState createBalanceState(balance_t balance, timestamp_t time, balance_t b
     return state;
 }
 
-void storeState(timestamp_t time, balance_t balance){
+void storeState(timestamp_t time, balance_t balance, balance_t balance_pending_in){
     for (int i = bank->last_b_state_time; i < time; i++){
         BalanceState state = createBalanceState(bank->b_history->s_history[i-1].s_balance, i, 0);
         bank->b_history->s_history[i] = state;
     }
-    BalanceState new_state = createBalanceState(balance, time, 0);
+    BalanceState new_state = createBalanceState(balance, time, balance_pending_in);
     bank->b_history->s_history[time] = new_state;
     bank->b_history->s_history_len = time + 1;
     bank->last_b_state_time = time + 1;
@@ -53,8 +52,10 @@ void showHistory(Mesh *mesh){
     Message msg;
     AllHistory allHistory;
     for (int i = 1; i <= mesh->processes_count; i++){
+        inc_lamport_time();
         waitAnyMessage(&msg, mesh, i);
         if (msg.s_header.s_type == BALANCE_HISTORY){
+            set_lamport_time(msg.s_header.s_local_time);
             memcpy(allHistory.s_history + allHistory.s_history_len, msg.s_payload, sizeof(BalanceHistory));
             allHistory.s_history_len++;
         }
@@ -64,12 +65,12 @@ void showHistory(Mesh *mesh){
 
 void transferIn(Mesh* mesh, local_id from, balance_t ammount, timestamp_t time){
     mesh->current_balance += ammount;
-    storeState(time, mesh->current_balance);
+    storeState(time, mesh->current_balance, 0);
     logEvent(EVENT_TRANSFER_IN, ammount, from, mesh->current_id);
 }
 
 void transferOut(Mesh* mesh, local_id to, balance_t ammount, timestamp_t time){
     mesh->current_balance -= ammount;
-    storeState(time, mesh->current_balance);
+    storeState(time, mesh->current_balance, ammount);
     logEvent(EVENT_TRANSFER_OUT, ammount, mesh->current_id, to);
 }

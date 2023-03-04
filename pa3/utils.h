@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#include "banking.h"
+#include "time.h"
 
 #define MAX_PROCESSES_COUNT 10
 

@@ -5,6 +5,7 @@ void transfer(void * parent_data, local_id src, local_id dst,
 {
     Mesh *mesh = (Mesh*) parent_data;
     
+    inc_lamport_time();
     Message msg = createMessage(MESSAGE_MAGIC, amount, src, dst, TRANSFER);
     if (send(mesh, src, &msg) != 0){
         exit(1);
@@ -22,7 +23,6 @@ int main(int argc, char * argv[])
     
     if (argc > 4 && strcmp(argv[1], "-p") == 0) {
         p_count = (int)atoi(argv[2]);
-        //printf("p_count:%d\n", p_count);
     } 
     else {
         return 1;

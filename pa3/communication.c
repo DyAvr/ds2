@@ -76,9 +76,11 @@ void createMeshPipes(){
 }
 
 void startChild(){
-    //start
-    Message msg = sendStartedSignal(mesh);
+    //star
+    sendStartedSignal(mesh);
     waitForAllStarted(mesh);
+    inc_lamport_time();
+    Message msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, 0, STARTED);
     if (send(mesh, 0, &msg) != 0){
         exit(1);
     }
@@ -87,6 +89,7 @@ void startChild(){
     //ending
     sendDoneSignal(mesh);
     waitForAllDone(mesh);
+    inc_lamport_time();
     sendHistory(mesh);
 }
 
@@ -98,6 +101,7 @@ void startParent(){
     sendStopSignal(mesh);
     //ending
     waitForAllDone(mesh);
+    inc_lamport_time();
     showHistory(mesh);
 }
 
@@ -106,16 +110,17 @@ void workChild(){
 
     while (exit_flag) {
         Message received_msg;
+        inc_lamport_time();
         int status = receive_any(mesh, &received_msg);
         while (status == 2){
             status = receive_any(mesh, &received_msg);
         }
 
         if (status == 0) {
-            //printf("type: %d\n", received_msg.s_header.s_type);
             switch (received_msg.s_header.s_type) {
                 case STOP:
-                    storeState(received_msg.s_header.s_local_time, mesh->current_balance);
+                    set_lamport_time(received_msg.s_header.s_local_time);
+                    storeState(inc_lamport_time(), mesh->current_balance, 0);
                     exit_flag = 0;
                     break;
                 case TRANSFER:
@@ -130,19 +135,22 @@ void handle_transfer(Message* received_msg) {
     TransferOrder transfer_order;
     memcpy(&transfer_order, received_msg->s_payload, sizeof(TransferOrder));
 
+    set_lamport_time(received_msg->s_header.s_local_time);
     if (transfer_order.s_dst == mesh->current_id) { 
-        timestamp_t time = get_physical_time();
-        transferIn(mesh, transfer_order.s_src, transfer_order.s_amount, time);
+        storeState(get_lamport_time(), mesh->current_balance, transfer_order.s_amount);
+        printf("IN1: %d\n", get_lamport_time());
+        transferIn(mesh, transfer_order.s_src, transfer_order.s_amount, inc_lamport_time());
+        printf("IN2: %d\n", get_lamport_time());
 
         Message ack_msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, mesh->parent_id, ACK);
-        ack_msg.s_header.s_local_time = time;
+        ack_msg.s_header.s_local_time = inc_lamport_time();
         send(mesh, mesh->parent_id, &ack_msg);
-
     } else if (transfer_order.s_src == mesh->current_id) {
-        timestamp_t time = get_physical_time();
-        transferOut(mesh, transfer_order.s_dst, transfer_order.s_amount, time);
+        printf("OUT1: %d\n", get_lamport_time());
+        transferOut(mesh, transfer_order.s_dst, transfer_order.s_amount, inc_lamport_time());
+        printf("OUT2: %d\n", get_lamport_time());
 
-        received_msg->s_header.s_local_time = time;
+        received_msg->s_header.s_local_time = inc_lamport_time();
         send(mesh, transfer_order.s_dst, received_msg);
     }
 }

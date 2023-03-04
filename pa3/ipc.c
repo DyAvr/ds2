@@ -13,7 +13,6 @@ int send(void * self, local_id dst, const Message * msg){
         return 1;
     }
 
-    //printf("SEND: %d->%d type:%d\n", mesh->current_id, dst, msg->s_header.s_type);
     return 0;
 }
 

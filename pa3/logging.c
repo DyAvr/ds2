@@ -32,22 +32,22 @@ void logEvent(EventStatus status, balance_t balance, local_id from, local_id to)
 
     switch(status) {
         case EVENT_STARTED:
-            sprintf(buf, log_started_fmt, get_physical_time(), from, getpid(), getppid(), balance);
+            sprintf(buf, log_started_fmt, get_lamport_time(), from, getpid(), getppid(), balance);
             break;
         case EVENT_DONE:
-            sprintf(buf, log_done_fmt, get_physical_time(), from, balance);
+            sprintf(buf, log_done_fmt, get_lamport_time(), from, balance);
             break;
         case EVENT_RECEIVED_ALL_STARTED:
-            sprintf(buf, log_received_all_started_fmt, get_physical_time(), from);
+            sprintf(buf, log_received_all_started_fmt, get_lamport_time(), from);
             break;
         case EVENT_RECEIVED_ALL_DONE:
-            sprintf(buf, log_received_all_done_fmt, get_physical_time(), from);
+            sprintf(buf, log_received_all_done_fmt, get_lamport_time(), from);
             break;
         case EVENT_TRANSFER_IN:
-            sprintf(buf, log_transfer_in_fmt, get_physical_time(), to, balance, from);
+            sprintf(buf, log_transfer_in_fmt, get_lamport_time(), to, balance, from);
             break;
         case EVENT_TRANSFER_OUT:
-            sprintf(buf, log_transfer_out_fmt, get_physical_time(), from, balance, to);
+            sprintf(buf, log_transfer_out_fmt, get_lamport_time(), from, balance, to);
             break;
         case EVENT_LOOP_OPERATION:
             sprintf(buf, log_loop_operation_fmt, from, to, balance);

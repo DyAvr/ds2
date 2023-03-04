@@ -5,7 +5,7 @@ extern Bank *bank;
 void initBank(int processes_count, char * argv[]);
 void initHistory(Mesh *mesh);
 
-void storeState(timestamp_t time, balance_t balance);
+void storeState(timestamp_t time, balance_t balance, balance_t balance_pending_in);
 void sendHistory(Mesh *mesh);
 void showHistory(Mesh *mesh);
 
