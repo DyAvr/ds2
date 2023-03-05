@@ -89,7 +89,6 @@ void startChild(){
     //ending
     sendDoneSignal(mesh);
     waitForAllDone(mesh);
-    inc_lamport_time();
     sendHistory(mesh);
 }
 
@@ -101,7 +100,6 @@ void startParent(){
     sendStopSignal(mesh);
     //ending
     waitForAllDone(mesh);
-    inc_lamport_time();
     showHistory(mesh);
 }
 
@@ -134,23 +132,18 @@ void workChild(){
 void handle_transfer(Message* received_msg) {
     TransferOrder transfer_order;
     memcpy(&transfer_order, received_msg->s_payload, sizeof(TransferOrder));
-
     set_lamport_time(received_msg->s_header.s_local_time);
-    if (transfer_order.s_dst == mesh->current_id) { 
+    if (transfer_order.s_dst == mesh->current_id) {
         storeState(get_lamport_time(), mesh->current_balance, transfer_order.s_amount);
-        printf("IN1: %d\n", get_lamport_time());
         transferIn(mesh, transfer_order.s_src, transfer_order.s_amount, inc_lamport_time());
-        printf("IN2: %d\n", get_lamport_time());
 
         Message ack_msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, mesh->parent_id, ACK);
         ack_msg.s_header.s_local_time = inc_lamport_time();
         send(mesh, mesh->parent_id, &ack_msg);
     } else if (transfer_order.s_src == mesh->current_id) {
-        printf("OUT1: %d\n", get_lamport_time());
         transferOut(mesh, transfer_order.s_dst, transfer_order.s_amount, inc_lamport_time());
-        printf("OUT2: %d\n", get_lamport_time());
 
-        received_msg->s_header.s_local_time = inc_lamport_time();
+        received_msg->s_header.s_local_time = get_lamport_time();
         send(mesh, transfer_order.s_dst, received_msg);
     }
 }
