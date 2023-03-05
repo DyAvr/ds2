@@ -5,7 +5,6 @@ void transfer(void * parent_data, local_id src, local_id dst,
 {
     Mesh *mesh = (Mesh*) parent_data;
     
-    inc_lamport_time();
     Message msg = createMessage(MESSAGE_MAGIC, amount, src, dst, TRANSFER);
     if (send(mesh, src, &msg) != 0){
         exit(1);
@@ -15,6 +14,8 @@ void transfer(void * parent_data, local_id src, local_id dst,
     if (msg.s_header.s_type != ACK){
         exit(1);
     }
+
+    set_lamport_time(msg.s_header.s_local_time);
 }
 
 int main(int argc, char * argv[])

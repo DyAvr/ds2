@@ -25,5 +25,5 @@ typedef enum {
 void initLogger();
 void closeLogger();
 
-void logEvent(EventStatus status, balance_t balance, local_id from, local_id to);
+void logEvent(EventStatus status, balance_t balance, local_id from, local_id to, timestamp_t time);
 void logPipe(PipeStatus status, int p1, int p2, int ds_read, int ds_write);

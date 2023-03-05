@@ -38,7 +38,6 @@ void storeState(timestamp_t time, balance_t balance, balance_t balance_pending_i
 }
 
 void sendHistory(Mesh *mesh){
-    inc_lamport_time();
     Message msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, mesh->parent_id, BALANCE_HISTORY);
     msg.s_header.s_payload_len = sizeof(local_id) + sizeof(uint8_t) + sizeof(BalanceState) * bank->b_history->s_history_len;
     
@@ -66,11 +65,11 @@ void showHistory(Mesh *mesh){
 void transferIn(Mesh* mesh, local_id from, balance_t ammount, timestamp_t time){
     mesh->current_balance += ammount;
     storeState(time, mesh->current_balance, 0);
-    logEvent(EVENT_TRANSFER_IN, ammount, from, mesh->current_id);
+    logEvent(EVENT_TRANSFER_IN, ammount, from, mesh->current_id, get_lamport_time());
 }
 
 void transferOut(Mesh* mesh, local_id to, balance_t ammount, timestamp_t time){
     mesh->current_balance -= ammount;
     storeState(time, mesh->current_balance, 0);
-    logEvent(EVENT_TRANSFER_OUT, ammount, mesh->current_id, to);
+    logEvent(EVENT_TRANSFER_OUT, ammount, mesh->current_id, to, get_lamport_time());
 }

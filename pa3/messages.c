@@ -6,7 +6,8 @@ Message createMessage(uint16_t magic, balance_t balance, local_id from, local_id
     TransferOrder order;
     char *buf = (char*)malloc(sizeof(char) * 255); 
 
-    timestamp_t time = get_lamport_time();
+    timestamp_t time = inc_lamport_time();
+    printf("FROM: %d TYPE: %d, TIME: %d\n", from, type, time);
     
     switch (type){
         case STARTED:
@@ -44,12 +45,10 @@ MessageHeader createMessageHeader(uint16_t magic, uint16_t p_len, int16_t type, 
 }
 
 Message sendStartedSignal(Mesh* mesh) {
-    Message msg;
-    inc_lamport_time();
-    logEvent(EVENT_STARTED, mesh->current_balance, mesh->current_id, 0);
+    logEvent(EVENT_STARTED, mesh->current_balance, mesh->current_id, 0, get_lamport_time());
+    Message msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, 0, STARTED);
     for (int i = 1; i <= mesh->processes_count; i++){
         if (i != mesh->current_id){
-            msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, 0, STARTED);
             if (send(mesh, i, &msg) != 0){
                 exit(1);
             }
@@ -65,7 +64,6 @@ void waitForAllStarted(Mesh* mesh) {
     for(int i = 1; i <= mesh->processes_count; i++) {
         if (i != mesh->current_id){
             int status = receive(mesh, i, &msg);
-            //printf("WAS: %d, i: %d, status: %d\n",mesh->current_id, i, status);
             if (status == 0 && msg.s_header.s_type != STARTED){
                 exit(2);
             } else if (status == 1){
@@ -77,11 +75,11 @@ void waitForAllStarted(Mesh* mesh) {
             }
         }
     }
-    logEvent(EVENT_RECEIVED_ALL_STARTED, 0, mesh->current_id, 0);
+    logEvent(EVENT_RECEIVED_ALL_STARTED, 0, mesh->current_id, 0, get_lamport_time());
 }
 
 void sendDoneSignal(Mesh* mesh) {
-    inc_lamport_time();
+    logEvent(EVENT_DONE, mesh->current_balance, mesh->current_id, 0, get_lamport_time());
     Message msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, 0, DONE);
     if(send_multicast(mesh, &msg) != 0) {
         printf("Can't send multicast");
@@ -101,12 +99,13 @@ void waitForAllDone(Mesh* mesh) {
                 exit(1);
             } else if (status == 2){
                 i--;
-            } else if (status == 0){
+            } 
+            if (status == 0){
                 set_lamport_time(msg.s_header.s_local_time);
             }
         }
     }
-    logEvent(EVENT_RECEIVED_ALL_DONE, 0, mesh->current_id, 0);
+    logEvent(EVENT_RECEIVED_ALL_DONE, 0, mesh->current_id, 0, get_lamport_time());
 }
 
 
@@ -131,6 +130,8 @@ void waitAnyMessage(Message *msg, Mesh *mesh, local_id from){
             exit(1);
         }
     }
+    
+    inc_lamport_time();
 }
 
 void sendStopSignal(Mesh* mesh) {

@@ -77,10 +77,9 @@ void createMeshPipes(){
 
 void startChild(){
     //star
-    sendStartedSignal(mesh);
+    Message msg = sendStartedSignal(mesh);
     waitForAllStarted(mesh);
-    inc_lamport_time();
-    Message msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, 0, STARTED);
+    msg.s_header.s_local_time = inc_lamport_time();
     if (send(mesh, 0, &msg) != 0){
         exit(1);
     }
@@ -108,7 +107,6 @@ void workChild(){
 
     while (exit_flag) {
         Message received_msg;
-        inc_lamport_time();
         int status = receive_any(mesh, &received_msg);
         while (status == 2){
             status = receive_any(mesh, &received_msg);
@@ -134,8 +132,8 @@ void handle_transfer(Message* received_msg) {
     memcpy(&transfer_order, received_msg->s_payload, sizeof(TransferOrder));
     set_lamport_time(received_msg->s_header.s_local_time);
     if (transfer_order.s_dst == mesh->current_id) {
-        storeState(get_lamport_time(), mesh->current_balance, transfer_order.s_amount);
-        transferIn(mesh, transfer_order.s_src, transfer_order.s_amount, inc_lamport_time());
+        storeState(received_msg->s_header.s_local_time, mesh->current_balance, transfer_order.s_amount);
+        transferIn(mesh, transfer_order.s_src, transfer_order.s_amount, get_lamport_time());
 
         Message ack_msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, mesh->parent_id, ACK);
         ack_msg.s_header.s_local_time = inc_lamport_time();

@@ -10,6 +10,7 @@ void set_lamport_time(timestamp_t lamp_time){
     if (lamport_time < lamp_time) {
         lamport_time = lamp_time;
     }
+    inc_lamport_time();
 }
 
 timestamp_t inc_lamport_time(){
