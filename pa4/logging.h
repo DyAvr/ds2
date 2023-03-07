@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "queue.h"
 #include "pa2345.h"
 
 static const char * const log_pipe_open_fmt =

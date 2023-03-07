@@ -5,7 +5,7 @@ Mesh *mesh;
 void initialize(int processes_count, int with_cs){
     initLogger();
     initMesh(processes_count);
-    createMeshProcesses();
+    createMeshProcesses(with_cs);
 }
 
 void initMesh(int processes_count){
@@ -20,7 +20,7 @@ void initMesh(int processes_count){
     createMeshPipes();
 }
 
-void createMeshProcesses(){
+void createMeshProcesses(int with_cs){
     pid_t pid;
     for (int i = 1; i <= mesh->processes_count; i++) {
         pid = fork();
@@ -30,16 +30,17 @@ void createMeshProcesses(){
         } else if (pid == 0) {
             mesh->current_id = i;
             mesh->current = pid;
-            initHistory(mesh);
             break;
         } 
     }
+    
+    initQueue(mesh);
     closeUnusedPipes();
 
     if (mesh->parent == mesh->current){
         startParent();
     } else {
-        startChild();
+        startChild(with_cs);
     }
 
     closeLineCommunication();
@@ -73,8 +74,8 @@ void createMeshPipes(){
     }
 }
 
-void startChild(){
-    //star
+void startChild(int with_cs){
+    //start
     Message msg = sendStartedSignal(mesh);
     waitForAllStarted(mesh);
     msg.s_header.s_local_time = inc_lamport_time();
@@ -82,92 +83,31 @@ void startChild(){
         exit(1);
     }
     //work
-    workChild();
+    workChild(with_cs);
     //ending
     sendDoneSignal(mesh);
     waitForAllDone(mesh);
-    sendHistory(mesh);
 }
 
 void startParent(){
     //start
     waitForAllStarted(mesh);
     //work
-    bank_robbery(mesh, mesh->processes_count);
-    sendStopSignal(mesh);
+
     //ending
     waitForAllDone(mesh);
-    showHistory(mesh);
 }
 
-void workChild(){
-    int exit_flag = 1;
+void workChild(int with_cs){
+    int iterations = mesh->current_id * 5;
 
-    while (exit_flag) {
-        Message received_msg;
-        int status = receive_any(mesh, &received_msg);
-        while (status == 2){
-            status = receive_any(mesh, &received_msg);
+    for (int i = 1; i <= iterations; i++) {
+        if (with_cs){
+            request_cs(mesh);
         }
-
-        if (status == 0) {
-            switch (received_msg.s_header.s_type) {
-                case STOP:
-                    set_lamport_time(received_msg.s_header.s_local_time);
-                    storeState(inc_lamport_time(), mesh->current_balance, 0);
-                    exit_flag = 0;
-                    break;
-                case TRANSFER:
-                    handle_transfer(&received_msg);
-                    break;
-            }
-        }
-    }
-}
-
-void handle_transfer(Message* received_msg) {
-    TransferOrder transfer_order;
-    memcpy(&transfer_order, received_msg->s_payload, sizeof(TransferOrder));
-    set_lamport_time(received_msg->s_header.s_local_time);
-    if (transfer_order.s_dst == mesh->current_id) {
-        storeState(received_msg->s_header.s_local_time, mesh->current_balance, transfer_order.s_amount);
-        transferIn(mesh, transfer_order.s_src, transfer_order.s_amount, get_lamport_time());
-
-        Message ack_msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, mesh->parent_id, ACK);
-        ack_msg.s_header.s_local_time = inc_lamport_time();
-        send(mesh, mesh->parent_id, &ack_msg);
-    } else if (transfer_order.s_src == mesh->current_id) {
-        transferOut(mesh, transfer_order.s_dst, transfer_order.s_amount, inc_lamport_time());
-
-        received_msg->s_header.s_local_time = get_lamport_time();
-        send(mesh, transfer_order.s_dst, received_msg);
-    }
-}
-
-void closeLineCommunication(){
-    for (int i = 0; i < mesh->processes_count; i++) {
-        if (i != mesh->current_id) {
-            close(mesh->pipes[i][mesh->current_id]->fdRead);
-            close(mesh->pipes[mesh->current_id][i]->fdWrite);
-            logPipe(PIPE_CLOSED, i, mesh->current_id, mesh->pipes[i][mesh->current_id]->fdRead, 0);
-            logPipe(PIPE_CLOSED, mesh->current_id, i, 0, mesh->pipes[mesh->current_id][i]->fdWrite);
-        }
-    }
-}
-
-void closeUnusedPipes(){
-    for (int i = 0; i <= mesh->processes_count; i++) {
-        for (int j = 0; j <= mesh->processes_count; j++) {
-            if (i != j) {
-                if (i != mesh->current_id){
-                    close(mesh->pipes[i][j]->fdWrite);
-                    logPipe(PIPE_CLOSED, i, j, 0, mesh->pipes[i][j]->fdWrite);
-                }
-                if (j != mesh->current_id){
-                    close(mesh->pipes[i][j]->fdRead);
-                    logPipe(PIPE_CLOSED, i, j, 0, mesh->pipes[i][j]->fdRead);
-                }
-            }
+        logEvent(EVENT_LOOP_OPERATION, mesh->current_id, i, iterations);
+        if (with_cs){
+            release_cs(mesh);
         }
     }
 }
@@ -197,6 +137,34 @@ void waitAllChilds(){
     for (int i = 0; i < mesh->processes_count; i++){
         if (wait(&value) == -1){
             exit(1);
+        }
+    }
+}
+
+void closeLineCommunication(){
+    for (int i = 0; i < mesh->processes_count; i++) {
+        if (i != mesh->current_id) {
+            close(mesh->pipes[i][mesh->current_id]->fdRead);
+            close(mesh->pipes[mesh->current_id][i]->fdWrite);
+            logPipe(PIPE_CLOSED, i, mesh->current_id, mesh->pipes[i][mesh->current_id]->fdRead, 0);
+            logPipe(PIPE_CLOSED, mesh->current_id, i, 0, mesh->pipes[mesh->current_id][i]->fdWrite);
+        }
+    }
+}
+
+void closeUnusedPipes(){
+    for (int i = 0; i <= mesh->processes_count; i++) {
+        for (int j = 0; j <= mesh->processes_count; j++) {
+            if (i != j) {
+                if (i != mesh->current_id){
+                    close(mesh->pipes[i][j]->fdWrite);
+                    logPipe(PIPE_CLOSED, i, j, 0, mesh->pipes[i][j]->fdWrite);
+                }
+                if (j != mesh->current_id){
+                    close(mesh->pipes[i][j]->fdRead);
+                    logPipe(PIPE_CLOSED, i, j, 0, mesh->pipes[i][j]->fdRead);
+                }
+            }
         }
     }
 }

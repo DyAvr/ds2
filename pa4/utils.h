@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <stdlib.h>
+#include <fcntl.h>
 
 #include "time.h"
 
@@ -23,7 +25,6 @@ typedef struct{
     local_id parent_id;
     pid_t current;
     pid_t parent;
-    balance_t current_balance;
 } Mesh;
 
 typedef struct{
@@ -32,7 +33,13 @@ typedef struct{
 } Logger;
 
 typedef struct{
-    balance_t balances[MAX_PROCESSES_COUNT];
-    BalanceHistory *b_history;
-    timestamp_t last_b_state_time;
-} Bank;
+    local_id l_id;
+    timestamp_t l_time;
+} Request;
+
+typedef struct{
+    int length;
+    Request requests[MAX_PROCESSES_COUNT+1];
+    int replies[MAX_PROCESSES_COUNT+1]; 
+    int released[MAX_PROCESSES_COUNT+1];
+} Queue;

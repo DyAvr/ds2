@@ -14,7 +14,7 @@ int main(int argc, char * argv[])
         with_cs = 1;
         p_count = (int)atoi(argv[3]);
     }
-    
+
     initialize(p_count, with_cs);
     
     return 0;

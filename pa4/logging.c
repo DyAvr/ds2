@@ -1,6 +1,3 @@
-#include <stdlib.h>
-#include <fcntl.h>
-
 #include "logging.h"
 
 Logger logger;
@@ -43,14 +40,11 @@ void logEvent(EventStatus status, local_id from, local_id to, timestamp_t time){
         case EVENT_RECEIVED_ALL_DONE:
             sprintf(buf, log_received_all_done_fmt, time, from);
             break;
-        case EVENT_TRANSFER_IN:
-            sprintf(buf, log_transfer_in_fmt, time, to, 0, from);
-            break;
-        case EVENT_TRANSFER_OUT:
-            sprintf(buf, log_transfer_out_fmt, time, from, 0, to);
-            break;
         case EVENT_LOOP_OPERATION:
             sprintf(buf, log_loop_operation_fmt, from, to, time);
+            print(buf);
+            break;
+        default:
             break;
     }
 
@@ -70,6 +64,5 @@ void logPipe(PipeStatus status, int p1, int p2, int ds_read, int ds_write){
             break;
     }
 
-    //printf("%s", buf);
     write(logger.fd_pipes_log, buf, strlen(buf));
 }

@@ -3,11 +3,9 @@
 Message createMessage(uint16_t magic, balance_t balance, local_id from, local_id to, MessageType type){
     Message message;
     MessageHeader messageHeader;
-    TransferOrder order;
     char *buf = (char*)malloc(sizeof(char) * 255); 
 
     timestamp_t time = inc_lamport_time();
-    printf("FROM: %d TYPE: %d, TIME: %d\n", from, type, time);
     
     switch (type){
         case STARTED:
@@ -21,12 +19,6 @@ Message createMessage(uint16_t magic, balance_t balance, local_id from, local_id
             messageHeader = createMessageHeader(magic, strlen(buf), type, time);
             message.s_header = messageHeader;
             strcpy(message.s_payload, buf);
-            return message;
-        case TRANSFER:
-            order = createTransferOrder(from, to, balance);
-            messageHeader = createMessageHeader(magic, sizeof(TransferOrder), type, time);
-            message.s_header = messageHeader;
-            memcpy(message.s_payload, &order, sizeof(TransferOrder));
             return message;
         default:
             messageHeader = createMessageHeader(magic, 0, type, time);
@@ -46,7 +38,7 @@ MessageHeader createMessageHeader(uint16_t magic, uint16_t p_len, int16_t type, 
 
 Message sendStartedSignal(Mesh* mesh) {
     logEvent(EVENT_STARTED, mesh->current_id, 0, get_lamport_time());
-    Message msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, 0, STARTED);
+    Message msg = createMessage(MESSAGE_MAGIC, 0, mesh->current_id, 0, STARTED);
     for (int i = 1; i <= mesh->processes_count; i++){
         if (i != mesh->current_id){
             if (send(mesh, i, &msg) != 0){
@@ -80,7 +72,7 @@ void waitForAllStarted(Mesh* mesh) {
 
 void sendDoneSignal(Mesh* mesh) {
     logEvent(EVENT_DONE, mesh->current_id, 0, get_lamport_time());
-    Message msg = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, 0, DONE);
+    Message msg = createMessage(MESSAGE_MAGIC, 0, mesh->current_id, 0, DONE);
     if(send_multicast(mesh, &msg) != 0) {
         printf("Can't send multicast");
         exit(1);
@@ -108,15 +100,6 @@ void waitForAllDone(Mesh* mesh) {
     logEvent(EVENT_RECEIVED_ALL_DONE, mesh->current_id, 0, get_lamport_time());
 }
 
-
-TransferOrder createTransferOrder(local_id from, local_id to, balance_t balance){
-    TransferOrder order;
-    order.s_src = from;
-    order.s_dst = to;
-    order.s_amount = balance;
-    return order;
-}
-
 void waitAnyMessage(Message *msg, Mesh *mesh, local_id from){
     inc_lamport_time();
     int status;
@@ -134,11 +117,16 @@ void waitAnyMessage(Message *msg, Mesh *mesh, local_id from){
     inc_lamport_time();
 }
 
-void sendStopSignal(Mesh* mesh) {
-    inc_lamport_time();
-    Message send = createMessage(MESSAGE_MAGIC, mesh->current_balance, mesh->current_id, mesh->parent_id, STOP);
-    if(send_multicast(mesh, &send) != 0) {
-        printf("Can't send multicast");
-        exit(1);
+local_id receiveAny(Mesh *mesh, Message *msg) {
+    for (local_id i = 1; i <= mesh->processes_count; i++) {
+        if (i != mesh->current_id) {
+            int status = receive(mesh, i, msg);
+            if (status == 0) {
+                set_lamport_time(msg->s_header.s_local_time);
+                inc_lamport_time();
+                return i;
+            }
+        }
     }
+    return -1;
 }
