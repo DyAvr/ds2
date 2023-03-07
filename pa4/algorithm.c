@@ -1,12 +1,36 @@
 #include "algorithm.h"
 
+
+void sendRequest(Mesh *mesh, Message *msg){
+    for (int i = 1; i <= mesh->processes_count; i++){
+        if (i != mesh->current_id){
+            if (!queue->released[i]){
+                send(mesh, i, msg);
+            } else {
+                queue->replies[i] = 1;
+            }
+        }
+    }
+}
+
+void sendRelease(Mesh *mesh, Message *msg){
+    for (int i = 1; i <= mesh->processes_count; i++){
+        if (i != mesh->current_id){
+            if (!queue->released[i]){
+                send(mesh, i, msg);
+            }
+        }
+    }
+    
+}
+
 int request_cs(const void *self) {
     Mesh *mesh = (Mesh*) self;
 
     Message request = createMessage(MESSAGE_MAGIC, 0, 0, 0, CS_REQUEST);
     Request req = createRequest(mesh->current_id, get_lamport_time());
     push(req);
-    send_multicast(mesh, &request);
+    sendRequest(mesh, &request);
     
     while (!isProcessInMutex(mesh)) {
         Message received;
@@ -34,6 +58,7 @@ int request_cs(const void *self) {
                 }
                 case DONE: {
                     queue->released[from] = 1;
+                    queue->replies[from] = 1;
                     break;
                 }
             }
@@ -51,10 +76,10 @@ int release_cs(const void *self) {
         if (i == mesh->current_id){
             queue->replies[i] = 1;
         } else {
-            queue->replies[i] = 0;
+            queue->replies[i] = queue->released[i];
         }
     }
-    send_multicast(mesh, &release);
+    sendRelease(mesh, &release);
     
     return 0;
 }
@@ -82,30 +107,10 @@ int isProcessInMutex(Mesh* mesh){
 }
 
 void waitForAllDone(Mesh* mesh) {
-    // Message msg;
-    // inc_lamport_time();
-    // for(int i = 1; i <= mesh->processes_count; i++) {
-    //     if (i != mesh->current_id){
-    //         int status = receive(mesh, i, &msg);
-    //         if (status == 0 && msg.s_header.s_type != DONE){
-    //             i--;
-    //         } else if (status == 1){
-    //             exit(1);
-    //         } else if (status == 2){
-    //             i--;
-    //         } 
-    //         if (status == 0){
-    //             set_lamport_time(msg.s_header.s_local_time);
-    //         }
-    //     }
-    // }
     while (!allProcessesDone(mesh)){
         Message received;
         local_id from = receiveAny(mesh, &received);
         if (from != -1){
-            if (mesh->current != mesh->parent){
-                handleCSMessages(mesh, &received, from);
-            }
             handleDoneMessages(&received, from);
         }
     }

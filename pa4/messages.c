@@ -79,29 +79,29 @@ void sendDoneSignal(Mesh* mesh) {
     }
 }
 
-void handleCSMessages(Mesh* mesh, Message *msg, local_id from){
-    switch (msg->s_header.s_type){
-        case CS_REQUEST: {
-            Message response = createMessage(MESSAGE_MAGIC, 0, 0, 0, CS_REPLY);
-            Request request = createRequest(from, msg->s_header.s_local_time);
-            push(request);
-            send(mesh, from, &response);
-            break;
-        }
-        case CS_REPLY:{
-            queue->replies[from] = 1;
-            break;
-        }
-        case CS_RELEASE:{
-            if (peek().l_id == mesh->current_id){
-                pop();
-            }
-            break;
-        }
-        default:
-            break;
-    }
-}
+// void handleCSMessages(Mesh* mesh, Message *msg, local_id from){
+//     switch (msg->s_header.s_type){
+//         case CS_REQUEST: {
+//             Message response = createMessage(MESSAGE_MAGIC, 0, 0, 0, CS_REPLY);
+//             Request request = createRequest(from, msg->s_header.s_local_time);
+//             push(request);
+//             send(mesh, from, &response);
+//             break;
+//         }
+//         case CS_REPLY:{
+//             queue->replies[from] = 1;
+//             break;
+//         }
+//         case CS_RELEASE:{
+//             if (peek().l_id == mesh->current_id){
+//                 pop();
+//             }
+//             break;
+//         }
+//         default:
+//             break;
+//     }
+// }
 
 void handleDoneMessages(Message *msg, local_id from){
     if (msg->s_header.s_type == DONE){

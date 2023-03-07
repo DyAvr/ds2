@@ -30,15 +30,19 @@ void logEvent(EventStatus status, local_id from, local_id to, timestamp_t time){
     switch(status) {
         case EVENT_STARTED:
             sprintf(buf, log_started_fmt, time, from, getpid(), getppid(), 0);
+            write(logger.fd_events_log, buf, strlen(buf));
             break;
         case EVENT_DONE:
             sprintf(buf, log_done_fmt, time, from, 0);
+            write(logger.fd_events_log, buf, strlen(buf));
             break;
         case EVENT_RECEIVED_ALL_STARTED:
             sprintf(buf, log_received_all_started_fmt, time, from);
+            write(logger.fd_events_log, buf, strlen(buf));
             break;
         case EVENT_RECEIVED_ALL_DONE:
             sprintf(buf, log_received_all_done_fmt, time, from);
+            write(logger.fd_events_log, buf, strlen(buf));
             break;
         case EVENT_LOOP_OPERATION:
             sprintf(buf, log_loop_operation_fmt, from, to, time);
@@ -47,9 +51,7 @@ void logEvent(EventStatus status, local_id from, local_id to, timestamp_t time){
         default:
             break;
     }
-
-    //printf("%s", buf);
-    write(logger.fd_events_log, buf, strlen(buf));
+    
 }
 
 void logPipe(PipeStatus status, int p1, int p2, int ds_read, int ds_write){

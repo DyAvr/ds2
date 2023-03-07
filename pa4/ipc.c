@@ -13,7 +13,7 @@ int send(void * self, local_id dst, const Message * msg){
         return 1;
     }
 
-    printf("send %d->%d type: %d time: %d\n", mesh->current_id, dst, msg->s_header.s_type, msg->s_header.s_local_time);
+    // printf("send %d->%d type: %d time: %d\n", mesh->current_id, dst, msg->s_header.s_type, msg->s_header.s_local_time);
 
     return 0;
 }
@@ -62,7 +62,7 @@ int receive(void * self, local_id from, Message * msg){
     msg->s_header = header;
     memcpy(msg->s_payload, payload_buffer, header.s_payload_len);
 
-    printf("receive %d->%d type: %d time: %d\n", from, mesh->current_id, msg->s_header.s_type, msg->s_header.s_local_time);
+    // printf("receive %d->%d type: %d time: %d\n", from, mesh->current_id, msg->s_header.s_type, msg->s_header.s_local_time);
     return 0;
 }
 

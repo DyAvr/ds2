@@ -9,5 +9,5 @@ void sendDoneSignal(Mesh* mesh);
 void waitAnyMessage(Message *msg, Mesh *mesh, local_id from);
 local_id receiveAny(Mesh *mesh, Message *msg); 
 
-void handleCSMessages(Mesh* mesh, Message *msg, local_id from);
+//void handleCSMessages(Mesh* mesh, Message *msg, local_id from);
 void handleDoneMessages(Message *msg, local_id from);
