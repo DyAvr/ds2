@@ -123,7 +123,6 @@ local_id receiveAny(Mesh *mesh, Message *msg) {
             int status = receive(mesh, i, msg);
             if (status == 0) {
                 set_lamport_time(msg->s_header.s_local_time);
-                inc_lamport_time();
                 return i;
             }
         }

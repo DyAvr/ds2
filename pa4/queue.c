@@ -49,7 +49,7 @@ int compare(Request r1, Request r2){
             return -1;
         }
     } else {
-        if (r1.l_time > r2.l_id){
+        if (r1.l_time > r2.l_time){
             return 1;
         } else {
             return -1;

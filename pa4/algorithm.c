@@ -1,13 +1,7 @@
 #include "algorithm.h"
 
-int my_log = 0;
-
 int request_cs(const void *self) {
     Mesh *mesh = (Mesh*) self;
-
-    if (my_log == 0){
-        my_log = open(events_log, O_CREAT | O_WRONLY | O_APPEND, 0644);
-    }
 
     Message request = createMessage(MESSAGE_MAGIC, 0, 0, 0, CS_REQUEST);
     Request req = createRequest(mesh->current_id, get_lamport_time());
@@ -55,9 +49,9 @@ int release_cs(const void *self) {
     Message release = createMessage(MESSAGE_MAGIC, 0, 0, 0, CS_RELEASE);
     for (int i = 1; i <= mesh->processes_count; i++) {
         if (i == mesh->current_id){
-            queue->replies[i] = 0;
-        } else {
             queue->replies[i] = 1;
+        } else {
+            queue->replies[i] = 0;
         }
     }
     send_multicast(mesh, &release);
@@ -79,14 +73,10 @@ int isProcessInMutex(Mesh* mesh){
     if (peek().l_id == mesh->current_id) {
         for(int i = 1; i <= mesh->processes_count; i++) {
             if (queue->replies[i] == 0){
-                sprintf(buf, "REPLIES X: %d\n", mesh->current_id);
-                write(my_log, buf, strlen(buf));
                 return 0;
             }
         }
     } else {
-        sprintf(buf, "NOT FIRST X: %d\n", mesh->current_id);
-        write(my_log, buf, strlen(buf));
         return 0;
     }
     return 1;
