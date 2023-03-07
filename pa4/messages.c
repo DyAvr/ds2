@@ -79,25 +79,34 @@ void sendDoneSignal(Mesh* mesh) {
     }
 }
 
-void waitForAllDone(Mesh* mesh) {
-    Message msg;
-    inc_lamport_time();
-    for(int i = 1; i <= mesh->processes_count; i++) {
-        if (i != mesh->current_id){
-            int status = receive(mesh, i, &msg);
-            if (status == 0 && msg.s_header.s_type != DONE){
-                i--;
-            } else if (status == 1){
-                exit(1);
-            } else if (status == 2){
-                i--;
-            } 
-            if (status == 0){
-                set_lamport_time(msg.s_header.s_local_time);
-            }
+void handleCSMessages(Mesh* mesh, Message *msg, local_id from){
+    switch (msg->s_header.s_type){
+        case CS_REQUEST: {
+            Message response = createMessage(MESSAGE_MAGIC, 0, 0, 0, CS_REPLY);
+            Request request = createRequest(from, msg->s_header.s_local_time);
+            push(request);
+            send(mesh, from, &response);
+            break;
         }
+        case CS_REPLY:{
+            queue->replies[from] = 1;
+            break;
+        }
+        case CS_RELEASE:{
+            if (peek().l_id == mesh->current_id){
+                pop();
+            }
+            break;
+        }
+        default:
+            break;
     }
-    logEvent(EVENT_RECEIVED_ALL_DONE, mesh->current_id, 0, get_lamport_time());
+}
+
+void handleDoneMessages(Message *msg, local_id from){
+    if (msg->s_header.s_type == DONE){
+        queue->released[from] = 1;
+    }
 }
 
 void waitAnyMessage(Message *msg, Mesh *mesh, local_id from){

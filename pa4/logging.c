@@ -48,7 +48,7 @@ void logEvent(EventStatus status, local_id from, local_id to, timestamp_t time){
             break;
     }
 
-    printf("%s", buf);
+    //printf("%s", buf);
     write(logger.fd_events_log, buf, strlen(buf));
 }
 

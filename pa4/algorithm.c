@@ -59,7 +59,7 @@ int release_cs(const void *self) {
     return 0;
 }
 
-int exitMutex(Mesh *mesh) {
+int allProcessesDone(Mesh *mesh) {
     for (int i = 1; i <= mesh->processes_count; i++){
         if (queue->released[i] == 0){
             return 0;
@@ -69,7 +69,6 @@ int exitMutex(Mesh *mesh) {
 }
 
 int isProcessInMutex(Mesh* mesh){
-    char buf[255];
     if (peek().l_id == mesh->current_id) {
         for(int i = 1; i <= mesh->processes_count; i++) {
             if (queue->replies[i] == 0){
@@ -80,4 +79,36 @@ int isProcessInMutex(Mesh* mesh){
         return 0;
     }
     return 1;
+}
+
+void waitForAllDone(Mesh* mesh) {
+    // Message msg;
+    // inc_lamport_time();
+    // for(int i = 1; i <= mesh->processes_count; i++) {
+    //     if (i != mesh->current_id){
+    //         int status = receive(mesh, i, &msg);
+    //         if (status == 0 && msg.s_header.s_type != DONE){
+    //             i--;
+    //         } else if (status == 1){
+    //             exit(1);
+    //         } else if (status == 2){
+    //             i--;
+    //         } 
+    //         if (status == 0){
+    //             set_lamport_time(msg.s_header.s_local_time);
+    //         }
+    //     }
+    // }
+    while (!allProcessesDone(mesh)){
+        Message received;
+        local_id from = receiveAny(mesh, &received);
+        if (from != -1){
+            if (mesh->current != mesh->parent){
+                handleCSMessages(mesh, &received, from);
+            }
+            handleDoneMessages(&received, from);
+        }
+    }
+
+    logEvent(EVENT_RECEIVED_ALL_DONE, mesh->current_id, 0, get_lamport_time());
 }

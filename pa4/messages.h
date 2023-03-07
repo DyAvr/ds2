@@ -6,6 +6,8 @@ MessageHeader createMessageHeader(uint16_t magic, uint16_t len, int16_t type, ti
 Message sendStartedSignal(Mesh* mesh);
 void waitForAllStarted(Mesh* mesh);
 void sendDoneSignal(Mesh* mesh);
-void waitForAllDone(Mesh* mesh);
 void waitAnyMessage(Message *msg, Mesh *mesh, local_id from);
 local_id receiveAny(Mesh *mesh, Message *msg); 
+
+void handleCSMessages(Mesh* mesh, Message *msg, local_id from);
+void handleDoneMessages(Message *msg, local_id from);

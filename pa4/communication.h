@@ -1,6 +1,6 @@
 #include <fcntl.h>
 
-#include "messages.h"
+#include "algorithm.h"
 
 void initialize(int processes_count, int with_cs);
 void initMesh(int processes_count);
